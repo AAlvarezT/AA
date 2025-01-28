@@ -1,0 +1,122 @@
+#Proyectito de sistema de temperatura y humedad en arduino
+#include <DHT.h>
+#include <DHT_U.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+
+// Paso 1: Configurar Sensor LDR
+int LDRpin = A0;
+int LDRval;
+int LDRintensidad;
+
+// Paso 2: Configurar Sensor de Temperatura y Humedad DHT11
+#define PinSensor 11 // Pin digital o pin de datos, al que se conecta el sensor
+#define Tipo DHT11  // Tipo de sensor
+DHT dht(PinSensor, Tipo);
+
+// Paso 3: Configurar el ventilador
+int pinN1 = 12; // Variables del Ventilador simulado con un motor
+int pinN2 = 13;
+
+// Paso 4: Configurar pantalla LCD
+LiquidCrystal_I2C lcd(0x27, 20, 4); // Objeto lcd con dirección 0x27 y tamaño de 20x4
+
+// Paso 5: Configurar el Teclado Matricial
+const byte filas = 4; // Número de filas
+const byte columnas = 4; // Número de columnas
+char keymap[filas][columnas] = {
+    {'1', '2', '3', 'A'},
+    {'4', '5', '6', 'B'},
+    {'7', '8', '9', 'C'},
+    {'*', '0', '#', 'D'}
+};
+byte pinesFilas[filas] = {2, 3, 4, 5}; // pines filas
+byte pinesColumnas[columnas] = {6, 7, 8, 9}; // pines columnas
+Keypad teclado = Keypad(makeKeymap(keymap), pinesFilas, pinesColumnas, filas, columnas);
+
+// Paso 6: Configurar el LED
+int led = 10;
+
+//Ahora sí iniciamos con el sistema, seteamos todo
+
+void setup() {
+    pinMode(led, OUTPUT);
+    pinMode(pinN1, OUTPUT);
+    pinMode(pinN2, OUTPUT);
+    dht.begin();
+    lcd.init();
+    lcd.backlight();
+    Serial.begin(9600);
+}
+//Creamos el programa general con funciones y luego declaramos las funciones
+
+void loop() {
+    lcd.setCursor(0, 0);
+    lcd.print("Ex Parcial - Lab  ");
+    int valorLDR = leerLDR();
+    if (esDeDia(valorLDR)) {
+        modoDia();
+    } else {
+        modoNoche();
+    }
+    delay(1000); // delay para que el sistema no se trabe
+}
+
+//Funciones declaradas
+
+int leerLDR() {
+    return analogRead(LDRpin);
+}
+
+bool esDeDia(int valorLDR) {
+    return valorLDR >= 100 && valorLDR <= 350;
+}
+
+void modoDia() {
+    float temp = dht.readTemperature();
+    lcd.setCursor(0, 1);
+    lcd.print("Ventilador:        ");  // Limpiar el resto de la línea
+    lcd.setCursor(0, 1);
+    if (temp >= 25.0) {
+        activarVentilador();
+        lcd.print("Ventilador Activo");
+    } else {
+        desactivarVentilador();
+        lcd.print("Ventilador Detenido");
+    }
+    lcd.setCursor(0, 2);
+    lcd.print("Temperatura: ");
+    lcd.print(temp);
+    lcd.print(" C");
+}
+
+void activarVentilador() {
+    digitalWrite(pinN1, HIGH);  // Encendemos ventilador en horario
+    digitalWrite(pinN2, LOW);
+}
+
+void desactivarVentilador() {
+    digitalWrite(pinN1, LOW);
+    digitalWrite(pinN2, LOW);  // se apaga el ventilador si ambos van en low
+}
+
+void modoNoche() {
+    char tecla = teclado.getKey();
+    lcd.setCursor(0, 1);
+    lcd.print("Estado:            ");  // Limpiar el resto de la línea
+    lcd.setCursor(0, 1);
+    if (tecla == '*') {
+        digitalWrite(led, HIGH);
+        lcd.clear();
+        lcd.print("ACTIVO");
+    } else if (tecla) {
+        digitalWrite(led, LOW);
+        lcd.clear();
+        lcd.print("INACTIVO");
+    } else {
+        digitalWrite(led, LOW);
+        lcd.clear();
+        lcd.print("Esperando...");
+    }
+}
