@@ -1,4 +1,6 @@
 #Proyectito de sistema de temperatura y humedad en arduino
+#Este código es para un Arduino y sirve para un sistema automatizado que controla un ventilador, una pantalla LCD, un teclado y un LED según la luz del ambiente y la temperatura.
+
 #include <DHT.h>
 #include <DHT_U.h>
 #include <Wire.h>
